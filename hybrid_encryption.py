@@ -2,20 +2,18 @@ import json
 import os
 import argparse
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import padding as sym_padding
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes, serialization, padding as sym_padding
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
 def generate_key_pair(private_key_path: str,  public_key_path: str, symmetric_key_path: str) -> None:
-    """Эта функция генерирует пару ключей(ассиметричный и симмитричный) гибридной системы, а после сохроняет их в файлы.
+    """Эта функция генерирует пару ключей(ассиметричный и симмитричный) гибридной системы, а после сохраняет их в файлы.
 
     Args:
         private_key_path (str): путь до секретного ключа
         public_key_path (str): путь до общедоступного ключа
-        symmetric_key_path (str): путь до симмитричного ключа
+        symmetric_key_path (str): путь до симметричного ключа
     """
     private_key = rsa.generate_private_key(
         public_exponent=65537, key_size=2048)
@@ -68,12 +66,12 @@ def encrypt_data(initial_file_path: str, private_key_path: str, encrypted_symmet
 
 
 def decrypt_data(encrypted_file_path: str, private_key_path: str, encrypted_symmetric_key_path: str, decrypted_file_path: str) -> None:
-    """эта функция дешифрует данные используя симмитричный и ассиметричные ключи, а так же сохраняет результат по указыному пути
+    """эта функция дешифрует данные используя симметричный и ассиметричные ключи, а так же сохраняет результат по указоному пути
 
     Args:
         encrypted_file_path (str): путь до зашифрованных данных
         private_key_path (str): путь до секретного ключа
-        encrypted_symmetric_key_path (str): путь до зашифрованного симмитричного ключа
+        encrypted_symmetric_key_path (str): путь до зашифрованного симметричного ключа
         decrypted_file_path (str): путь куда дешифруются данные
     """
     with open(private_key_path, "rb") as f:
@@ -100,12 +98,13 @@ def decrypt_data(encrypted_file_path: str, private_key_path: str, encrypted_symm
             f_out.write(unpadder.finalize())
 
 
-def load_settings(settings_file_path:str)->dict:
+def load_settings(settings_file_path: str) -> dict:
     with open(settings_file_path) as json_file:
         json_data = json.load(json_file)
     return json_data
-
-
+def unload_settings(setting:dict)->None:
+    with open(setting, 'w') as fp:
+        json.dump(setting, fp)
 
 if __name__ == "__main__":
     settings = {
@@ -116,26 +115,36 @@ if __name__ == "__main__":
         'public_key': 'key\public\key.pem',
         'secret_key': 'key\secret\key.pem'
     }
-    parser = argparse.ArgumentParser(description="Hybrid encryption using an asymmetric and symmetric key")
-    parser.add_argument('-set', '--settings', help='Загружает файд json')
-    parser.add_argument('-gen', '--generation', help='Запускает режим генерации ключей')
-    parser.add_argument('-enc', '--encryption', help='Запускает режим шифрования')
-    parser.add_argument('-dec', '--decryption', help='Запускает режим дешифрования')
+    parser = argparse.ArgumentParser(
+        description="Hybrid encryption using an asymmetric and symmetric key")
+    parser.add_argument('-set', '--settings', help='Загружает файл json')
+    parser.add_argument('-gen', '--generation',
+                        help='Запускает режим генерации ключей')
+    parser.add_argument('-enc', '--encryption',
+                        help='Запускает режим шифрования')
+    parser.add_argument('-dec', '--decryption',
+                        help='Запускает режим дешифрования')
+    parser.add_argument('-sav', '--saving',
+                        help='Выгружает настройки')
     args = parser.parse_args()
     if args.generation is not None:
         print('Generation keys\n')
         generate_key_pair(
-                settings['secret_key'], settings['public_key'], settings['symmetric_key'])
+            settings['secret_key'], settings['public_key'], settings['symmetric_key'])
         print('Keys created')
     elif args.encryption is not None:
         print('Encryption\n')
         encrypt_data(settings['initial_file'], settings['secret_key'],
-                         settings['symmetric_key'], settings['encrypted_file'])
+                     settings['symmetric_key'], settings['encrypted_file'])
+        print('The data has been encrypted')
     elif args.decryption is not None:
         print('Decryption\n')
         decrypt_data(settings['encrypted_file'], settings['secret_key'],
-                         settings['symmetric_key'], settings['decrypted_file'])
+                     settings['symmetric_key'], settings['decrypted_file'])
         print('The data has been decrypted')
     elif args.settings is not None:
-        settings=load_settings(args.settings)
+        settings = load_settings(args.settings)
         print('Данные загружены')
+    elif args.saving is not None:
+        unload_settings(settings)
+        print('Данные выгружены')
