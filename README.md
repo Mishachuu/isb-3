@@ -11,7 +11,7 @@
 ## Правила работы с кодом:
 1. Для выполнения лабораторной работы сначала *необходимо* [форкнуть](https://docs.github.com/en/get-started/quickstart/fork-a-repo) этот репозиторий;  
 1.1. Имя форкнутого репозитория может быть каким вам удобно;  
-1.2. В дескрипшене репозитория будет полезно указать свои ФИО, номер группы; 
+1.2. В дескрипшене репозитория будет полезно указать свои ФИО, номер группы;  
 1.3. Копировать необходимо `main` ветку;  
 
 2. [Склонировать](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) полученный репозиторий себе на машину.
@@ -19,7 +19,7 @@
 3. Создать проект в выбранной IDE, начать реализовывать необходимый по заданию код и [коммитить](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/about-commits) результаты;  
 3.1. Преподаватель с большей вероятностью поверит в то, что код в репозитории написан вами лично, если коммитов в репозитории будет больше одного;  
 3.2. Коммиты *должны* иметь вменяемые описания на английском языке;  
-3.4. Ваш репозиторий *должен* содержать файл [requirements.txt](https://www.jetbrains.com/help/pycharm/managing-dependencies.html#create-requirements); 
+3.3. Ваш репозиторий *должен* содержать файл [requirements.txt](https://www.jetbrains.com/help/pycharm/managing-dependencies.html#create-requirements); 
 
 4. Когда необходимый код написан, соответствует [PEP](https://peps.python.org/pep-0008/) и **работает**, необходимо сделать [пул-риквест в исходный репозиторий](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork);  
 4.1. Название пул риквеста *должно* формироваться следующим образом: `<Номер группы> <ФИО> Лаб.<Номер лабы> Вар.<Номер варианта>`;  
