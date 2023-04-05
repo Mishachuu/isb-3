@@ -1,14 +1,23 @@
 import json
 import os
 import argparse
+import logging
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization, padding as sym_padding
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+settings = {
+    'initial_file': 'file\initial_file.txt',
+    'encrypted_file': 'file\encrypted_file.txt',
+    'decrypted_file': 'file\decrypted_file.txt',
+    'symmetric_key': 'key\symmetric_key.txt',
+    'public_key': 'key\public\key.pem',
+    'secret_key': 'key\secret\key.pem'
+}
 
 
 def generate_key_pair(private_key_path: str,  public_key_path: str, symmetric_key_path: str) -> None:
-    """Эта функция генерирует пару ключей(ассиметричный и симмитричный) гибридной системы, а после сохраняет их в файлы.
+    """Эта функция генерирует пару ключей(ассиметричный и симметричный) гибридной системы, а после сохраняет их в файлы.
 
     Args:
         private_key_path (str): путь до секретного ключа
@@ -21,8 +30,7 @@ def generate_key_pair(private_key_path: str,  public_key_path: str, symmetric_ke
     with open(public_key_path, 'wb') as f_p, open(private_key_path, 'wb') as f_c:
         f_p.write(public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ))
+            format=serialization.PublicFormat.SubjectPublicKeyInfo))
         f_c.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
                                             format=serialization.PrivateFormat.TraditionalOpenSSL,
                                             encryption_algorithm=serialization.NoEncryption()))
@@ -34,12 +42,12 @@ def generate_key_pair(private_key_path: str,  public_key_path: str, symmetric_ke
 
 
 def encrypt_data(initial_file_path: str, private_key_path: str, encrypted_symmetric_key_path: str, encrypted_file_path: str) -> None:
-    """Эта функция шифрует данные используя симмитричный и ассиметричные ключи, а так же сохраняет результат по указыному пути
+    """Эта функция шифрует данные используя симметричный и ассиметричные ключи, а так же сохраняет результат по указыному пути
 
     Args:
         initial_file_path (str): путь до шифруемых данных
         private_key_path (str): путь до приватного ключа
-        encrypted_symmetric_key_path (str): путь до зашифрованного симмитричного ключа
+        encrypted_symmetric_key_path (str): путь до зашифрованного симметричного ключа
         encrypted_file_path (str): путь куда шифруются данных
     """
     with open(private_key_path, "rb") as f:
@@ -47,12 +55,10 @@ def encrypt_data(initial_file_path: str, private_key_path: str, encrypted_symmet
             f.read(), password=None)
     with open(encrypted_symmetric_key_path, "rb") as f:
         encrypted_symmetric_key = f.read()
-
     symmetric_key = private_key.decrypt(encrypted_symmetric_key, padding.OAEP(
         mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
     iv = os.urandom(16)
-    cipher = Cipher(algorithms.SM4(symmetric_key), modes.CBC(
-        iv))
+    cipher = Cipher(algorithms.SM4(symmetric_key), modes.CBC(iv))
     encryptor = cipher.encryptor()
     padder = sym_padding.PKCS7(128).padder()
     with open(initial_file_path, "rb") as f_in, open(encrypted_file_path, "wb") as f_out:
@@ -60,7 +66,6 @@ def encrypt_data(initial_file_path: str, private_key_path: str, encrypted_symmet
         while chunk := f_in.read(128):
             padded_chunk = padder.update(chunk)
             f_out.write(encryptor.update(padded_chunk))
-
         f_out.write(encryptor.update(padder.finalize()))
         f_out.write(encryptor.finalize())
 
@@ -77,14 +82,12 @@ def decrypt_data(encrypted_file_path: str, private_key_path: str, encrypted_symm
     with open(private_key_path, "rb") as f:
         private_key = serialization.load_pem_private_key(
             f.read(), password=None, backend=default_backend())
-
     with open(encrypted_symmetric_key_path, "rb") as f:
         encrypted_symmetric_key = f.read()
-
     symmetric_key = private_key.decrypt(encrypted_symmetric_key, padding.OAEP(
         mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
     with open(encrypted_file_path, "rb") as f_in, open(decrypted_file_path, "wb") as f_out:
-        iv = f_in.read(16)  # Считывание IV из файла
+        iv = f_in.read(16)
         cipher = Cipher(algorithms.SM4(symmetric_key),
                         modes.CBC(iv))
         decryptor = cipher.decryptor()
@@ -93,58 +96,68 @@ def decrypt_data(encrypted_file_path: str, private_key_path: str, encrypted_symm
             while chunk := f_in.read(128):
                 decrypted_chunk = decryptor.update(chunk)
                 f_out.write(unpadder.update(decrypted_chunk))
-
             f_out.write(unpadder.update(decryptor.finalize()))
             f_out.write(unpadder.finalize())
 
 
 def load_settings(settings_file_path: str) -> dict:
+    """ эта функция читает из файла
+
+    Args:
+        settings_file_path (str): путь до файла
+
+    Returns:
+        dict: данные файла
+    """
     with open(settings_file_path) as json_file:
         json_data = json.load(json_file)
     return json_data
-def unload_settings(setting:dict)->None:
-    with open(setting, 'w') as fp:
-        json.dump(setting, fp)
+
+
+def unload_settings(settings_file_path: str, settings: dict) -> None:
+    """функция пишет данные в файл
+
+    Args:
+        settings_file_path (str): путь до файла
+        settings (dict): данные
+    """
+    with open(settings_file_path, 'w') as fp:
+        json.dump(settings, fp)
+
 
 if __name__ == "__main__":
-    settings = {
-        'initial_file': 'file\initial_file.txt',
-        'encrypted_file': 'file\encrypted_file.txt',
-        'decrypted_file': 'file\decrypted_file.txt',
-        'symmetric_key': 'key\symmetric_key.txt',
-        'public_key': 'key\public\key.pem',
-        'secret_key': 'key\secret\key.pem'
-    }
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(
         description="Hybrid encryption using an asymmetric and symmetric key")
+    mode_group = parser.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument('-gen', '--generation', action='store_true',
+                            help='Запускает режим генерации ключей')
+    mode_group.add_argument('-enc', '--encryption', action='store_true',
+                            help='Запускает режим шифрования')
+    mode_group.add_argument('-dec', '--decryption', action='store_true',
+                            help='Запускает режим дешифрования')
     parser.add_argument('-set', '--settings', help='Загружает файл json')
-    parser.add_argument('-gen', '--generation',
-                        help='Запускает режим генерации ключей')
-    parser.add_argument('-enc', '--encryption',
-                        help='Запускает режим шифрования')
-    parser.add_argument('-dec', '--decryption',
-                        help='Запускает режим дешифрования')
-    parser.add_argument('-sav', '--saving',
-                        help='Выгружает настройки')
     args = parser.parse_args()
-    if args.generation is not None:
-        print('Generation keys\n')
-        generate_key_pair(
-            settings['secret_key'], settings['public_key'], settings['symmetric_key'])
-        print('Keys created')
-    elif args.encryption is not None:
-        print('Encryption\n')
-        encrypt_data(settings['initial_file'], settings['secret_key'],
-                     settings['symmetric_key'], settings['encrypted_file'])
-        print('The data has been encrypted')
-    elif args.decryption is not None:
-        print('Decryption\n')
-        decrypt_data(settings['encrypted_file'], settings['secret_key'],
-                     settings['symmetric_key'], settings['decrypted_file'])
-        print('The data has been decrypted')
-    elif args.settings is not None:
+    if args.settings is not None:
         settings = load_settings(args.settings)
-        print('Данные загружены')
-    elif args.saving is not None:
-        unload_settings(settings)
-        print('Данные выгружены')
+        logging.info('Data uploaded')
+    mode = (args.generation, args.encryption, args.decryption)
+    match mode:
+        case (True, False, False):
+            logging.info('Generation keys\n')
+            generate_key_pair(
+                settings['secret_key'], settings['public_key'], settings['symmetric_key'])
+            logging.info('Keys created')
+        case (False, True, False):
+            logging.info('Encryption\n')
+            encrypt_data(settings['initial_file'], settings['secret_key'],
+                         settings['symmetric_key'], settings['encrypted_file'])
+            logging.info('The data has been encrypted')
+        case (False, False, True):
+            logging.info('Decryption\n')
+            decrypt_data(settings['encrypted_file'], settings['secret_key'],
+                         settings['symmetric_key'], settings['decrypted_file'])
+            logging.info('The data has been decrypted')
+        case _:
+            logging.error("No valid mode selected")
+    unload_settings('settings.json', settings)
