@@ -47,5 +47,5 @@ def decrypt_data(encrypted_file_path: str, private_key_path: str, encrypted_symm
             except FileNotFoundError:
                 logging.error(f"{decrypted_file_path} not found")
     except FileNotFoundError:
-        logging.error(f"{decrypted_file_path} not found") if os.path.isfile(encrypted_file_path) else logging.error(f"{encrypted_file_path} not found")
-
+        logging.error(f"{decrypted_file_path} not found") if os.path.isfile(
+            encrypted_file_path) else logging.error(f"{encrypted_file_path} not found")
