@@ -1,10 +1,12 @@
 import argparse
+import json
 import logging
 import os
-import json
-from generate_key import generate_key_pair
+
 from decrypt import decrypt_data
 from encrypt import encrypt_data
+from generate_key import generate_key_pair
+
 SETTINGS_FILE = os.path.join('file', 'settings.json')
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

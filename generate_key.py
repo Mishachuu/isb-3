@@ -1,9 +1,9 @@
-import json
-import os
-import argparse
 import logging
-from cryptography.hazmat.primitives import hashes, serialization, padding as sym_padding
+import os
+
+from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
 SETTINGS = {'initial_file': 'file\initial_file.txt', 'encrypted_file': 'file\encrypted_file.txt', 'decrypted_file': 'file\decrypted_file.txt',
             'symmetric_key': 'key\symmetric_key.txt', 'public_key': 'key\public\key.pem', 'secret_key': 'key\secret\key.pem'}
 
@@ -19,15 +19,22 @@ def generate_key_pair(private_key_path: str,  public_key_path: str, symmetric_ke
     private_key = rsa.generate_private_key(
         public_exponent=65537, key_size=2048)
     public_key = private_key.public_key()
-    with open(public_key_path, 'wb') as f_p, open(private_key_path, 'wb') as f_c:
-        f_p.write(public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo))
-        f_c.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
-                                            format=serialization.PrivateFormat.TraditionalOpenSSL,
-                                            encryption_algorithm=serialization.NoEncryption()))
+    try:
+        with open(public_key_path, 'wb') as f_p, open(private_key_path, 'wb') as f_c:
+            f_p.write(public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo))
+            f_c.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                                                encryption_algorithm=serialization.NoEncryption()))
+    except FileNotFoundError:
+        logging.error(f"{private_key_path} not found") if os.path.isfile(
+            public_key_path) else logging.error(f"{public_key_path} not found")
     symmetric_key = os.urandom(16)
     ciphertext = public_key.encrypt(symmetric_key, padding.OAEP(mgf=padding.MGF1(
         algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
-    with open(symmetric_key_path, "wb") as f:
-        f.write(ciphertext)
+    try:
+        with open(symmetric_key_path, "wb") as f:
+            f.write(ciphertext)
+    except FileNotFoundError:
+        logging.error(f"{symmetric_key_path} not found")
